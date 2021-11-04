@@ -9,6 +9,10 @@ package mr
 import "os"
 import "strconv"
 
+
+
+
+
 //
 // example to show how to declare the arguments
 // and reply for an RPC.
@@ -21,28 +25,41 @@ type ExampleArgs struct {
 type ExampleReply struct {
 	Y int
 }
-type TaskInfo struct {
-	/*** state value
-	  * 0 --> map
-	    1 --> reduce
-	    2 --> wait
-	    3 --> nothing to do
-	*/
-	State        int
-	//要读取的文件名
-	FileName     string
-	//经过map后输出到哪个file中-->针对map
-	FileIdx      int
-	//要写到哪个文件-->针对reduce
-	OutFileIdx   int
-	//分成几个reduce
-	ReduceNum    int
-	FileNum      int
-}
-
 
 // Add your RPC definitions here.
 
+type TryMapArgs struct {
+}
+
+type TryMapReply struct {
+	// if should not run map, run reduce
+	RunMap bool
+}
+
+const (
+	TaskMap    = 0
+	TaskReduce = 1
+	TaskWait   = 2
+	TaskEnd    = 3
+)
+
+type TaskInfo struct {
+	/*
+		Declared in consts above
+			0  map
+			1  reduce
+			2  wait
+			3  end
+	*/
+	State int
+
+	FileName  string
+	FileIndex int
+	PartIndex int
+
+	NReduce int
+	NFiles  int
+}
 
 // Cook up a unique-ish UNIX-domain socket name
 // in /var/tmp, for the master.
@@ -53,3 +70,4 @@ func masterSock() string {
 	s += strconv.Itoa(os.Getuid())
 	return s
 }
+
