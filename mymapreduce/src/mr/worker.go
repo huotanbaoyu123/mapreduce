@@ -121,7 +121,8 @@ func CallExample() {
 func call(rpcname string, args interface{}, reply interface{}) bool {
 	// c, err := rpc.DialHTTP("tcp", "127.0.0.1"+":1234")
 	sockname := masterSock()
-	c, err := rpc.DialHTTP("unix", sockname)
+	tt :=masterNetwork()
+	c, err := rpc.DialHTTP(tt, sockname)
 	if err != nil {
 		log.Fatal("dialing:", err)
 	}
@@ -141,7 +142,8 @@ func workerMap(mapf func(string, string) []KeyValue, taskInfo *TaskInfo) {
 
 	// read in target files as a key-value array
 	intermediate := []KeyValue{}
-	file, err := os.Open(taskInfo.FileName)
+	//file, err := os.Open(taskInfo.FileName)
+	file, err := os.OpenFile(taskInfo.FileName,os.O_CREATE|os.O_RDWR|os.O_APPEND, 0644)
 	if err != nil {
 		log.Fatalf("cannot open %v", taskInfo.FileName)
 	}
@@ -205,7 +207,9 @@ func workerReduce(reducef func(string, []string) string, taskInfo *TaskInfo) {
 	intermediate := []KeyValue{}
 	for index := 0; index < taskInfo.NFiles; index++ {
 		inname := innameprefix + strconv.Itoa(index) + innamesuffix
-		file, err := os.Open(inname)
+	//	file, err := os.Open(inname)
+		file, err := os.OpenFile(inname,os.O_CREATE|os.O_RDWR|os.O_APPEND, 0644)
+
 		if err != nil {
 			fmt.Printf("Open intermediate file %v failed: %v\n", inname, err)
 			panic("Open file error")

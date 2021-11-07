@@ -6,7 +6,11 @@ package mr
 // remember to capitalize all names.
 //
 
-import "os"
+import (
+	"os"
+	"strings"
+	"unicode"
+)
 import "strconv"
 
 
@@ -68,6 +72,36 @@ type TaskInfo struct {
 func masterSock() string {
 	s := "/var/tmp/824-mr-"
 	s += strconv.Itoa(os.Getuid())
+
+	if isLinux!=true{
+		s =":2234"
+	}
+
 	return s
 }
 
+func masterNetwork() string {
+	s :="unix"
+	if isLinux!=true{
+		s ="tcp"
+	}
+    return s
+}
+func Map(filename string, contents string) []KeyValue {
+	// function to detect word separators.
+	ff := func(r rune) bool { return !unicode.IsLetter(r) }
+
+	// split contents into an array of words.
+	words := strings.FieldsFunc(contents, ff)
+
+	kva := []KeyValue{}
+	for _, w := range words {
+		kv := KeyValue{w, "1"}
+		kva = append(kva, kv)
+	}
+	return kva
+}
+func Reduce(key string, values []string) string {
+	// return the number of occurrences of this word.
+	return strconv.Itoa(len(values))
+}

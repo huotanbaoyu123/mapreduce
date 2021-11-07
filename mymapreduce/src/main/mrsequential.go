@@ -8,9 +8,6 @@ package main
 
 import (
 	"fmt"
-	"strconv"
-	"strings"
-	"unicode"
 )
 import "../mr"
 import "plugin"
@@ -27,24 +24,7 @@ type ByKey []mr.KeyValue
 func (a ByKey) Len() int           { return len(a) }
 func (a ByKey) Swap(i, j int)      { a[i], a[j] = a[j], a[i] }
 func (a ByKey) Less(i, j int) bool { return a[i].Key < a[j].Key }
-func Map(filename string, contents string) []mr.KeyValue {
-	// function to detect word separators.
-	ff := func(r rune) bool { return !unicode.IsLetter(r) }
 
-	// split contents into an array of words.
-	words := strings.FieldsFunc(contents, ff)
-
-	kva := []mr.KeyValue{}
-	for _, w := range words {
-		kv := mr.KeyValue{w, "1"}
-		kva = append(kva, kv)
-	}
-	return kva
-}
-func Reduce(key string, values []string) string {
-	// return the number of occurrences of this word.
-	return strconv.Itoa(len(values))
-}
 func main() {
 	if len(os.Args) < 3 {
 		fmt.Fprintf(os.Stderr, "Usage: mrsequential xxx.so inputfiles...\n")

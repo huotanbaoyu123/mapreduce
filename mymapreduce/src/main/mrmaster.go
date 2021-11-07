@@ -21,6 +21,7 @@ func main() {
 	m := mr.MakeMaster(files, 10)
 	for m.Done() == false {
 		time.Sleep(time.Second)
+		fmt.Fprint(os.Stderr, "master: run...\n")
 	}
 
 	time.Sleep(time.Second)
