@@ -8,6 +8,7 @@ import (
 	"path/filepath"
 	"sort"
 	"strconv"
+	"syscall"
 	"time"
 )
 import "log"
@@ -185,18 +186,34 @@ func workerMap(mapf func(string, string) []KeyValue, taskInfo *TaskInfo) {
 	for outindex, file := range outFiles {
 		outname := outprefix + strconv.Itoa(outindex)
 		oldpath := filepath.Join(file.Name())
-		//fmt.Printf("temp file oldpath %v\n", oldpath)
-		os.Rename(oldpath, outname)
+		fmt.Printf("temp file oldpath %v\n", oldpath,outname)
 		file.Close()
+	//	movefile(oldpath, outname)
+		os.Rename(oldpath, outname)
+
 	}
 	// acknowledge master
 	CallTaskDone(taskInfo)
 }
+func movefile(oldpath,newpaht string) error{
+	from,err:=syscall.UTF16PtrFromString(oldpath)
 
+	if err != nil {
+		fmt.Printf("from Error: %v\n", err)
+		panic("Json encode failed")
+	}
+	to,err:=syscall.UTF16PtrFromString(newpaht)
+
+	if err != nil {
+		fmt.Printf("to Error: %v\n", err)
+		panic("Json encode failed")
+	}
+    return syscall.MoveFile(from,to)
+}
 func workerReduce(reducef func(string, []string) string, taskInfo *TaskInfo) {
 	fmt.Printf("Got assigned reduce task on part %v\n", taskInfo.PartIndex)
 	outname := "mr-out-" + strconv.Itoa(taskInfo.PartIndex)
-	//fmt.Printf("%v\n", taskInfo)
+	fmt.Printf("%v\n", taskInfo)
 
 	// read from output files from map tasks
 
@@ -207,8 +224,8 @@ func workerReduce(reducef func(string, []string) string, taskInfo *TaskInfo) {
 	intermediate := []KeyValue{}
 	for index := 0; index < taskInfo.NFiles; index++ {
 		inname := innameprefix + strconv.Itoa(index) + innamesuffix
-	//	file, err := os.Open(inname)
-		file, err := os.OpenFile(inname,os.O_CREATE|os.O_RDWR|os.O_APPEND, 0644)
+		file, err := os.Open(inname)
+	//	file, err := os.OpenFile(inname,os.O_CREATE|os.O_RDWR|os.O_APPEND, 0644)
 
 		if err != nil {
 			fmt.Printf("Open intermediate file %v failed: %v\n", inname, err)
@@ -229,7 +246,8 @@ func workerReduce(reducef func(string, []string) string, taskInfo *TaskInfo) {
 
 	sort.Sort(ByKey(intermediate))
 
-	//ofile, err := os.Create(outname)
+//	ofile, err := os.Create(outname)
+	//ofile, err := os.OpenFile(inname,os.O_CREATE|os.O_RDWR|os.O_APPEND, 0644)
 	ofile, err := ioutil.TempFile("mr-tmp", "mr-*")
 	if err != nil {
 		fmt.Printf("Create output file %v failed: %v\n", outname, err)
@@ -253,8 +271,13 @@ func workerReduce(reducef func(string, []string) string, taskInfo *TaskInfo) {
 
 		i = j
 	}
-	os.Rename(filepath.Join(ofile.Name()), outname)
+	tmpOfileName:=ofile.Name()
 	ofile.Close()
+	err = os.Rename(filepath.Join(tmpOfileName), outname)
+	if err != nil {
+		fmt.Printf("Rename file %v failed: %v\n", outname, err)
+		panic("Rename file error")
+	}
 	// acknowledge master
 	CallTaskDone(taskInfo)
 }
