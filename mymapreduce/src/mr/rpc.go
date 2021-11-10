@@ -47,6 +47,7 @@ const (
 	TaskEnd    = 3
 )
 
+
 type TaskInfo struct {
 	/*
 		Declared in consts above
