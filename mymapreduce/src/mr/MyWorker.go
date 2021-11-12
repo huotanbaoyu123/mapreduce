@@ -1,44 +1,41 @@
 package mr
 
-//func ihash(key string) int{
-//	h:=fnv.New32a()
-//	h.Write([]byte(key))
-//	return int (h.Sum32()&0x7fffffff)
-//}
 import (
 	"encoding/json"
-	"fmt"
+
 	"io/ioutil"
+
 	"os"
-	"path/filepath"
 	"sort"
-	"strconv"
-	"syscall"
-	"time"
 )
 import "log"
+import "fmt"
 import "net/rpc"
 import "hash/fnv"
-
-
-
 //
 // Map functions return a slice of KeyValue.
 //
-//type KeyValue struct {
-//	Key   string
-//	Value string
-//}
-//type ByKey []KeyValue
+type KeyValue struct {
+	Key   string
+	Value string
+}
+type ByKey []KeyValue
 //
-//func (a ByKey) Len() int           { return len(a) }
-//func (a ByKey) Swap(i, j int)      { a[i], a[j] = a[j], a[i] }
-//func (a ByKey) Less(i, j int) bool { return a[i].Key < a[j].Key }
-
+func (a ByKey) Len() int           { return len(a) }
+func (a ByKey) Swap(i, j int)      { a[i], a[j] = a[j], a[i] }
+func (a ByKey) Less(i, j int) bool { return a[i].Key < a[j].Key }
+func ihash(key string) int{
+	h:=fnv.New32a()
+	h.Write([]byte(key))
+	return int (h.Sum32()&0x7fffffff)
+}
 //finalizeReduceFile atomiacally renames temporary reduce file to a completed redcue task file
 func finalizeReduceFile(tmpFile string ,taskN int) {
 	finalFile:=fmt.Sprintf("mr-out-%d",taskN)
-	os.Rename(tmpFile,finalFile)
+	err:=os.Rename(tmpFile,finalFile)
+	if err!=nil{
+		log.Fatalf("cannot finalizeReduceFile %s",err)
+	}
 }
 
 //get name of the intermediate file,given the map and recude task numbers
@@ -61,27 +58,28 @@ func MyWorker(mapf func(string, string) []KeyValue,
 	for{
         args:=GetTaskArgs{}
         reply:=GetTaskReply{}
+		//tell coordinator that we're done
 
+	//	call("Coordinator.HandleFinishedTask",&args,&reply)
         //this will wait unitl we get assingned a task!
-        call("Coordinator.HandleGetTask",&ars,&reply)
+        call("Coordinator.HandleGetTask",&args,&reply)
 
 		switch reply.Tasktype {
 		case MapTask:
 			performMap(reply.MapFile,reply.TaskNum,reply.NReduceTask,mapf)
 		case ReduceTast:
-			performReduce(reply.MapFile,reply.NMapTasks,reducef)
+			performReduce(reply.TaskNum,reply.NReduceTask,reducef)
 		case DoneTask:
 			os.Exit(0)
 		default:
-			fmt.Errorf("Bad task type? %s",reply.TaskType)
+			fmt.Errorf("Bad task type? %s",reply.Tasktype)
 
 		}
 
-     	//tell coordinator that we're done
-     	finargs:=FinishedTaskArgs{Tasktype: reply.Tasktype,TaskNum: reply.TaskNum}
+		finargs:=FinishedTaskArgs{Tasktype: reply.Tasktype,TaskNum: reply.TaskNum}
 
-        finreply:=FinishedTaskReply{}
-        call("Coordinator.HandleFinishTask",&finargs,&finreply)
+		finreply:=FinishedTaskReply{}
+		call("Coordinator.HandleFinishedTask",&finargs,&finreply)
 
 	}
 
@@ -94,7 +92,7 @@ func performMap(filename string,taskNum int,nRedcueTasks int,mapf func(string,st
 	}
 	content,err:=ioutil.ReadAll(file)
 	if err!=nil{
-		log.Fatalf("cannot open %v",filename)
+		log.Fatalf("cannot read %v",filename)
 	}
 	file.Close()
 
@@ -109,7 +107,7 @@ func performMap(filename string,taskNum int,nRedcueTasks int,mapf func(string,st
 	encoders:=[]*json.Encoder{}
 
 	for r:=0 ;r<nRedcueTasks;r++{
-		tmpFile,err:=ioutil.TempFile("","")
+		tmpFile,err:=ioutil.TempFile("mr-tmp","")
 		if err !=nil{
 			log.Fatalf("can not open tmefile")
 		}
@@ -122,7 +120,7 @@ func performMap(filename string,taskNum int,nRedcueTasks int,mapf func(string,st
 
 	//write output keys to appropriteat(temporary!) using the provided ihash function
 	for _,kv:=range  kva{
-		r:=ihash(kv.key)
+		r:=ihash(kv.Key)%nRedcueTasks
 		encoders[r].Encode(&kv)
 	}
 	for _,f:=range tmpFiles{
@@ -134,7 +132,7 @@ func performMap(filename string,taskNum int,nRedcueTasks int,mapf func(string,st
 	}
 }
 
-func performReduce(taskNum int,nMapTasks int,reducef func(string,string)[]KeyValue) {
+func performReduce(taskNum int,nMapTasks int,reducef func(string,[]string)string) {
 	//get all intermediate files corresponding to this reduce task,and collect the
 	//cooresponding key-value pairs
 	kva:=[]KeyValue{}
@@ -159,7 +157,7 @@ func performReduce(taskNum int,nMapTasks int,reducef func(string,string)[]KeyVal
 	sort.Sort(ByKey(kva))
 
 	//get temporaray reduce file to write values
-	tmpFile,err:=ioutil.TempFile("","")
+	tmpFile,err:=ioutil.TempFile("mr-tmp","")
 	if err!=nil{
 		log.Fatalf("cannot open tmpfile")
 	}
@@ -171,7 +169,7 @@ func performReduce(taskNum int,nMapTasks int,reducef func(string,string)[]KeyVal
     	key_end:=key_begin+1
     	//this loop finds all values with the same keys--they are grouped
     	//together beacause the key are sorted
-    	for key_end<len(kva)&&kva[key_end].key==kva[key_begin].Key{
+    	for key_end<len(kva)&&kva[key_end].Key==kva[key_begin].Key{
     		key_end++
 		}
 		values:=[]string{}
@@ -186,6 +184,7 @@ func performReduce(taskNum int,nMapTasks int,reducef func(string,string)[]KeyVal
 		key_begin=key_end
 	}
 
+	tmpFile.Close()
 	//atmoically rename reduce file to final reduce file
 	finalizeReduceFile(tmpFilename,taskNum)
 }
@@ -193,7 +192,31 @@ func performReduce(taskNum int,nMapTasks int,reducef func(string,string)[]KeyVal
 
 
 
+//
+// send an RPC request to the master, wait for the response.
+// usually returns true.
+// returns false if something goes wrong.
+//
+func call(rpcname string, args interface{}, reply interface{}) bool {
+	// c, err := rpc.DialHTTP("tcp", "127.0.0.1"+":1234")
 
+	sockname := masterSock()
+	tt :=masterNetwork()
+//	c, err := rpc.DialHTTP("unix", "mr-socket")
+	c, err := rpc.DialHTTP(tt, sockname)
+	if err != nil {
+		log.Fatal("dialing:", err)
+	}
+	defer c.Close()
+
+	err = c.Call(rpcname, args, reply)
+	if err == nil {
+		return true
+	}
+
+	fmt.Println(err)
+	return false
+}
 
 
 

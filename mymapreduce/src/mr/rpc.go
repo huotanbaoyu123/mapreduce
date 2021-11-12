@@ -8,8 +8,6 @@ package mr
 
 import (
 	"os"
-	"strings"
-	"unicode"
 )
 import "strconv"
 
@@ -40,31 +38,8 @@ type TryMapReply struct {
 	RunMap bool
 }
 
-const (
-	TaskMap    = 0
-	TaskReduce = 1
-	TaskWait   = 2
-	TaskEnd    = 3
-)
 
 
-type TaskInfo struct {
-	/*
-		Declared in consts above
-			0  map
-			1  reduce
-			2  wait
-			3  end
-	*/
-	State int
-
-	FileName  string
-	FileIndex int
-	PartIndex int
-
-	NReduce int
-	NFiles  int
-}
 
 // Cook up a unique-ish UNIX-domain socket name
 // in /var/tmp, for the master.
@@ -87,22 +62,4 @@ func masterNetwork() string {
 		s ="tcp"
 	}
     return s
-}
-func Map(filename string, contents string) []KeyValue {
-	// function to detect word separators.
-	ff := func(r rune) bool { return !unicode.IsLetter(r) }
-
-	// split contents into an array of words.
-	words := strings.FieldsFunc(contents, ff)
-
-	kva := []KeyValue{}
-	for _, w := range words {
-		kv := KeyValue{w, "1"}
-		kva = append(kva, kv)
-	}
-	return kva
-}
-func Reduce(key string, values []string) string {
-	// return the number of occurrences of this word.
-	return strconv.Itoa(len(values))
 }

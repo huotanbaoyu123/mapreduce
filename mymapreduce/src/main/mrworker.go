@@ -38,5 +38,5 @@ func main() {
 	//mapf, reducef := loadPlugin(os.Args[1])
 	reducef := Reduce
 
-	mr.Worker(mapf, reducef)
+	mr.MyWorker(mapf, reducef)
 }

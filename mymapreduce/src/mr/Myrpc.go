@@ -3,9 +3,9 @@ package mr
 
 type Tasktype int
 const (
-	MapTask   tasktype = 0
-	ReduceTast   tasktype = 1
-	DoneTask   tasktype = 2
+	MapTask   Tasktype = 0
+	ReduceTast   Tasktype = 1
+	DoneTask   Tasktype = 2
 
 )
 
@@ -17,7 +17,8 @@ getTask RPCs are sent from an idle coordintator to ask for the next task perform
  */
 
 //no arguments to send the coordinator to ask for a task
-type GetTaskArgs struct {}
+type GetTaskArgs struct {
+}
 
 //Note:PRC fields need to be capitalized in order to be sent
 type GetTaskReply struct {

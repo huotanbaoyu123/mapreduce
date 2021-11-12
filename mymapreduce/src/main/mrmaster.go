@@ -18,7 +18,8 @@ func main() {
 	//	"src/main/pg-sherlock_holmes.txt","src/main/pg-tom_sawyer.txt"}
 //	m := mr.MakeMaster(os.Args[1:], 10)
 	files:=[] string{"src/main/pg-being_ernest.txt"}
-	m := mr.MakeMaster(files, len(files))
+	//m := mr.MakeMaster(files, len(files))
+	m := mr.MakeCoordinator(files, len(files))
 	for m.Done() == false {
 		time.Sleep(time.Second)
 		fmt.Fprint(os.Stderr, "master: run...\n")
