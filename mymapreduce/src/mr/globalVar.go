@@ -1,5 +1,5 @@
 package mr
-
-const (
-	isLinux = false
-)
+//
+//const (
+//	isLinux = false
+//)

@@ -182,6 +182,9 @@ func (c *Coordinator)Done() bool{
 	return c.isDone
 }
 
+
+
+
 //create a coordinator
 //main/mrcoordinator.go calls this function
 //nReduce is the number of reduce tasks to use
@@ -190,8 +193,8 @@ func MakeCoordinator(files[] string,nReduce int)*Coordinator{
 	c:=Coordinator{}
 	c.cond=sync.NewCond(&c.mu)
 	c.mapFiles=files
-	c.mapTaskFinished=make([]bool,len(files))
-	c.mapTaskIssued=make([]time.Time,len(files))
+	c.mapTaskFinished=make([]bool,nReduce)
+	c.mapTaskIssued=make([]time.Time,nReduce)
 	c.nReduceTasks=nReduce
 	c.reduceTaskFinished=make([]bool,nReduce)
 	c.reduceTasksIssued=make([]time.Time,nReduce)

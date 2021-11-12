@@ -9,7 +9,9 @@ const (
 
 )
 
-
+const (
+	IsLinux = false
+)
 
 
 /*
