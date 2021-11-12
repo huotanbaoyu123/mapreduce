@@ -1,10 +1,5 @@
 package mr
 
-import (
-	"os"
-	"strconv"
-)
-
 type Tasktype int
 const (
 	MapTask   Tasktype = 0
@@ -14,7 +9,7 @@ const (
 )
 
 const (
-	IsLinux = false
+	IsLinux = true
 )
 
 
@@ -71,8 +66,8 @@ type FinishedTaskReply struct{
 // Can't use the current directory since
 // Athena AFS doesn't support UNIX-domain sockets.
 func masterSock() string {
-	s := "/var/tmp/824-mr-"
-	s += strconv.Itoa(os.Getuid())
+	s := "mr-socket"
+//	s += strconv.Itoa(os.Getuid())
 
 	if IsLinux!=true{
 		s =":2234"

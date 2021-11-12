@@ -3,19 +3,16 @@ package main
 //
 // simple sequential MapReduce.
 //
-// go run mrsequential.go wc.so pg*.txt
+// go run mrsequential.go ../mrapps/wc.so pg*.txt
 //
 
-import (
-	"fmt"
-)
-import "../mr"
+import "fmt"
+import "mr"
 import "plugin"
 import "os"
 import "log"
 import "io/ioutil"
 import "sort"
-import _ "../mrapps"
 
 // for sorting by key.
 type ByKey []mr.KeyValue
@@ -27,13 +24,12 @@ func (a ByKey) Less(i, j int) bool { return a[i].Key < a[j].Key }
 
 func main() {
 	if len(os.Args) < 3 {
-		fmt.Fprintf(os.Stderr, "Usage: mrsequential xxx.so inputfiles...\n")
+		fmt.Fprintf(os.Stderr, "Usage: mrsequential ../mrapps/xxx.so inputfiles...\n")
 		os.Exit(1)
 	}
 
-	mapf:=Map
-	//mapf, reducef := loadPlugin(os.Args[1])
-	reducef := Reduce
+	mapf, reducef := loadPlugin(os.Args[1])
+
 	//
 	// read each input file,
 	// pass it to Map,

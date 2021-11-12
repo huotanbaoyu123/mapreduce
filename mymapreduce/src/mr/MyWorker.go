@@ -105,9 +105,16 @@ func performMap(filename string,taskNum int,nRedcueTasks int,mapf func(string,st
 	tmpFiles:=[]*os.File{}
 	tmpFilenames:=[]string{}
 	encoders:=[]*json.Encoder{}
+	var tmpFile *os.File
 
 	for r:=0 ;r<nRedcueTasks;r++{
-		tmpFile,err:=ioutil.TempFile("mr-tmp","")
+		if IsLinux!=false{
+			tmpFile,err=ioutil.TempFile("","")
+		}else{
+			tmpFile,err=ioutil.TempFile("mr-tmp","")
+		}
+
+
 		if err !=nil{
 			log.Fatalf("can not open tmefile")
 		}
@@ -155,9 +162,15 @@ func performReduce(taskNum int,nMapTasks int,reducef func(string,[]string)string
 
 	//sort the keys
 	sort.Sort(ByKey(kva))
-
+	var tmpFile *os.File
+	var err error
 	//get temporaray reduce file to write values
-	tmpFile,err:=ioutil.TempFile("mr-tmp","")
+	if IsLinux!=false{
+		tmpFile,err=ioutil.TempFile("","")
+	}else{
+		tmpFile,err=ioutil.TempFile("mr-tmp","")
+	}
+	//tmpFile,err:=ioutil.TempFile("mr-tmp","")
 	if err!=nil{
 		log.Fatalf("cannot open tmpfile")
 	}
