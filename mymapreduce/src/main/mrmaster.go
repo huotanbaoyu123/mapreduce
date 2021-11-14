@@ -17,9 +17,9 @@ func main() {
 			"src/main/pg-frankenstein.txt","src/main/pg-grimm.txt",
 			"src/main/pg-huckleberry_finn.txt","src/main/pg-metamorphosis.txt",
 			"src/main/pg-sherlock_holmes.txt","src/main/pg-tom_sawyer.txt"}
-		m = mr.MakeCoordinator(files, 10)
+		m = mr.MakeCoordinator(files, 8)
 	} else{
-		m = mr.MakeCoordinator(os.Args[1:], 10)
+		m = mr.MakeCoordinator(os.Args[1:], 8)
 	}
 
 	//files:=[] string{"src/main/pg-being_ernest.txt"}

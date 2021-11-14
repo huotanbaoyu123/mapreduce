@@ -56,7 +56,7 @@ func (c *Coordinator)HandleGetTask(args *GetTaskArgs,reply *GetTaskReply)error{
 		 mapDone:=true
 	    for mapTaskTmp,done:=range c.mapTaskFinished{
 	    	if!done {
-
+				fmt.Print(mapTaskTmp,"mapTaskTmp \n")
 				iszeor := c.mapTaskIssued[mapTaskTmp].IsZero()
 				isOverTime := time.Since(c.mapTaskIssued[mapTaskTmp]).Seconds() > 10
 				//assign a task if it's either never been isused,or if it's been too long
@@ -193,12 +193,15 @@ func MakeCoordinator(files[] string,nReduce int)*Coordinator{
 	c:=Coordinator{}
 	c.cond=sync.NewCond(&c.mu)
 	c.mapFiles=files
+
+	fmt.Print(nReduce,"nReduce \n")
 	c.mapTaskFinished=make([]bool,nReduce)
 	c.mapTaskIssued=make([]time.Time,nReduce)
 	c.nReduceTasks=nReduce
 	c.reduceTaskFinished=make([]bool,nReduce)
 	c.reduceTasksIssued=make([]time.Time,nReduce)
 
+	fmt.Print("files=\n",files,"file num...\n", len(files))
 	//wake up the Gettask handler thread every once in awhile to check if some task hasn't
 	//finished,so we can know to reissue it
 	go func() {

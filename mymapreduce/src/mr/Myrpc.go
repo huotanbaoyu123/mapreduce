@@ -9,6 +9,7 @@ const (
 )
 
 const (
+	//IsLinux = false
 	IsLinux = true
 )
 
