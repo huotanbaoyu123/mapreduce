@@ -57,6 +57,71 @@ type config struct {
 
 var ncpu_once sync.Once
 
+func RunMaintest(){
+	servers := 3
+	cfg :=  Make_configNoT( servers, false)
+	cfg.begin("Test (2A): initial election")
+
+	// is a leader elected?
+	cfg.checkOneLeader()
+
+	// sleep a bit to avoid racing with followers learning of the
+	// election, then check that all peers agree on the term.
+	time.Sleep(50 * time.Millisecond)
+	term1 := cfg.checkTerms()
+	if term1 < 1 {
+		fmt.Printf("term is %v, but should be at least 1", term1)
+	}
+
+	// does the leader+term stay the same if there is no network failure?
+	time.Sleep(2 * 1000 * time.Millisecond)
+	term2 := cfg.checkTerms()
+	if term1 != term2 {
+		fmt.Printf("warning: term changed even though there were no failures")
+	}
+
+	// there should still be a leader.
+	cfg.checkOneLeader()
+
+	cfg.end()
+}
+func Make_configNoT(n int, unreliable bool) *config {
+	ncpu_once.Do(func() {
+		if runtime.NumCPU() < 2 {
+			fmt.Printf("warning: only one CPU, which may conceal locking bugs\n")
+		}
+		rand.Seed(makeSeed())
+	})
+	runtime.GOMAXPROCS(4)
+	cfg := &config{}
+
+	cfg.net = labrpc.MakeNetwork()
+	cfg.n = n
+	cfg.applyErr = make([]string, cfg.n)
+	cfg.rafts = make([]*Raft, cfg.n)
+	cfg.connected = make([]bool, cfg.n)
+	cfg.saved = make([]*Persister, cfg.n)
+	cfg.endnames = make([][]string, cfg.n)
+	cfg.logs = make([]map[int]interface{}, cfg.n)
+	cfg.start = time.Now()
+
+	cfg.setunreliable(unreliable)
+
+	cfg.net.LongDelays(true)
+
+	// create a full set of Rafts.
+	for i := 0; i < cfg.n; i++ {
+		cfg.logs[i] = map[int]interface{}{}
+		cfg.start1(i)
+	}
+
+	// connect everyone
+	for i := 0; i < cfg.n; i++ {
+		cfg.connect(i)
+	}
+
+	return cfg
+}
 func make_config(t *testing.T, n int, unreliable bool) *config {
 	ncpu_once.Do(func() {
 		if runtime.NumCPU() < 2 {

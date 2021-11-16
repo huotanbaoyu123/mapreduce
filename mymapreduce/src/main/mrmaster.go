@@ -1,6 +1,7 @@
 package main
 
 import "../mr"
+
 import "time"
 import "os"
 import "fmt"
@@ -11,7 +12,6 @@ func main() {
 		os.Exit(1)
 	}
 	var m *mr.Coordinator
-
     if mr.IsLinux!=true{
 		files:=[] string{"src/main/pg-being_ernest.txt","src/main/pg-dorian_gray.txt",
 			"src/main/pg-frankenstein.txt","src/main/pg-grimm.txt",
